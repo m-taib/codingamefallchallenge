@@ -5,11 +5,13 @@
 #include <cmath>
 #include <map>
 #include <list>
-using namespace std;
-#define MAX_AVOID_FORCE 4
-#define target_up   0
-#define target_down 9000
 
+using namespace std;
+#define target_up   500
+#define target_down 9000
+#define MOVE_UP 1
+#define MOVE_DOWN -1
+#define RADIUS 650
 
 float     calc_distance(int x, int y, int x_fish, int y_fish)
 {
@@ -78,7 +80,9 @@ class   Drone
         int     vy;
         int emergency;
         int battery;
-
+        int move;
+        int target;
+        Drone(){};
         Drone(int id , int x , int y , int vx, int vy, int emergency , int battery)
         {
             this->id = id;
@@ -86,6 +90,13 @@ class   Drone
             this->y = y;
             this->emergency = emergency;
             this->battery = battery;
+            this->move = MOVE_DOWN;
+        };
+
+        void    rotate(int x, int y)
+        {
+            vx = x;
+            vy = y;            
         }
 };
 
@@ -117,141 +128,10 @@ int     arr[2] = {0, 0};
 
 // i have to turn off light if im close to monster
 int     lamba[2] = {0, 0};
-int     check_borders(int &tmp_y)
-{
-    if (tmp_y < 9999)
-        return (1);
-    return (0);
-}
+
 int     light[2] = {0, 0};
 
-void    make_decision(int &i, int id ,int& tmp_x, int& tmp_y,  map<int, pair<int, int>>& coords)
-{
-    float x;
-    float y;
-    int     dist_from_monster_next_point = 0;
-    int     dist_from_monster = 0;
-    int     angle = 0;
-    int     min = 0;
-    int     r = v.size() - 1;
-   
 
-    r = v.size() - 1;
-    
-    while (r >= 0 && v[r].type == -1) 
-    {
-        r--;
-    }
-    r++;
-    cerr << "r : " << r << endl;
-   
-    int     dist;
-    int     state;
-
-    map<int, pair<int, int> > next_points;
-
-    dist = 0;
-    min = 9000;
-    int n = r;
-    x = tmp_x;
-    y = tmp_y;
-    cerr << "player coordinates : " << x << " " << y - 600 << endl;
-    cerr << "next point : " << x << " " << y << endl;
-    if (r > 0 && v[r].type == -1)
-    {
-        while (angle <= 360)
-        {
-            
-            state = 0;
-            r = n;
-            while (r < v.size())
-            {
-                if (v[r].x)
-                {
-                    x -= coords[id].first;
-                    y -= coords[id].second; 
-                    
-                    double _cos = cos(angle * M_PI / 180);
-                    double _sin = -sin(angle * M_PI / 180);
-            
-                    double x_new = x * _cos - y * _sin; 
-                    double y_new = x * _sin + y * _cos; 
-
-                    x = x_new + coords[id].first;
-                    y = y_new + coords[id].second;
-
-                    dist_from_monster = calc_distance(x, y, v[r].x , v[r].y);
-                    dist_from_monster_next_point = calc_distance(x, y, v[r].x + v[r].vx, v[r].y + v[r].vy);
-                    
-                    int     d = light[i] ? 800 : 800;
-                    // if (id == 2)
-                    // {
-                    // cerr << "player id : " << id << " monster id : " << v[r].id <<  " x monster : " << v[r].x 
-                    //         << " y monster : " << v[r].y << endl;
-                    // cerr << "radius : " << d << endl;
-                    // }
-                    //check borders
-                    if (/*check_borders(y) && */(dist_from_monster <= d || dist_from_monster_next_point <= d))
-                    {
-                        lamba[i] = 1;
-                        // cerr << "player id : " << id << " monster id : " << v[r].id <<  " x monster : " << v[r].x 
-                        //     << " y monster : " << v[r].y << endl;
-                        // cerr << "player coordinates : " << coords[id].first << " " << coords[id].second << endl;
-                        // cerr << "distance from monster : " << dist_from_monster << endl;
-                        // cerr << "distance from next point monster : " << dist_from_monster_next_point << endl;
-                        state = 1;
-                        break ;
-                        // cerr << "Before : " << endl;
-                        // cerr << "x : " << x << endl;
-                        // cerr << "y : " << y << endl;
-                    
-                       
-                        // cerr << "After : " << endl;
-                        // cerr << "x : " << x << endl;
-                        // cerr << "y : " << y << endl;    
-                        
-                    }
-                    
-                    // dist = calc_distance(tmp_x, tmp_y, x , y);
-                    // next_point[dist] = make_pair(x, y);
-                }
-                r++;
-            }
-            if (state)
-            {
-                // cerr << "not valid" << endl;
-                angle += 20;
-                continue ;
-            }
-            else
-            {
-                // cerr << "valid" << endl;
-                // cerr << "x : " << tmp_x << " y : " << tmp_y << endl;
-                dist = calc_distance(tmp_x, tmp_y, x , y);
-                next_points[dist] = make_pair(x, y);
-
-            }
-            angle += 20;        
-        }
-        // if (angle)
-        // {
-        //     // next_points[dist_from_monster_next_point] = make_pair(x, y);
-        //     tmp_x = x;
-        //     tmp_y = y;
-        //     cerr << "Entred " << endl;
-        // }
-    }
-    cerr << "size : " << next_points.size() << endl;
-    if (next_points.size())
-    {
-        tmp_x = next_points.begin()->second.first;
-        tmp_y = next_points.begin()->second.second;
-        // cerr << "closet point : " << endl;
-        // cerr << "x : " << tmp_x << " y : " << tmp_y << endl;
-
-    }
-       
-}
 
 int     check_territory(int x, int y,  vector<Monster>& visible_monster)
 {
@@ -264,70 +144,164 @@ int     check_territory(int x, int y,  vector<Monster>& visible_monster)
     {
         dist_from_monster = calc_distance(x, y, visible_monster[i].x , visible_monster[i].y);
         dist_from_monster_next_point = calc_distance(x, y, visible_monster[i].x + visible_monster[i].vx, visible_monster[i].y + visible_monster[i].vy);
-        if (dist_from_monster <= 800 || dist_from_monster_next_point <= 800)
+        if (dist_from_monster <= RADIUS || dist_from_monster_next_point <= RADIUS)
             return (1);
         i++;
     }
     return (0);
 }
 
-void    set_coords(Drone& drone,  vector<Monster>& visible_monster)
+int     check_boundries(int x, int y)
+{
+    return (x < 0 || x > 9999 || y < 0 || y > 9999);
+}
+
+vector<int> reported_fish;
+void    set_coords(int i, Drone& drone,  vector<Monster>& visible_monster)
 {
     int     dist_from_monster_next_point = 0;
     int     dist_from_monster = 0;
     int     angle = 0;
     map<int, pair<int, int> > next_points;
 
+    int     step = 600;
 
+    
     //add velocity to drone
-    if (drone.y + 600 > target_down)
-    {
-        drone.vy = target_down;
-    }
-    else if (drone.y - 600 > target_up)
-    {
+    // if (drone.y == target_down || drone.y + 600 > target_down) 
+    // { 
+    //     drone.move = MOVE_UP;
+    // }
+    // else if (drone.y <= target_up)
+    // {
+    //     drone.move = MOVE_DOWN;
+    // }
+    // if (drone.move == MOVE_DOWN)
+    // {
+    //     drone.vy += step;
+    //     if (drone.vy > target_down)
+    //         drone.vy = target_down;
+    // }
+    // else
+    // {
+    //     drone.vy -= step;
+    //     if (drone.vy < target_up)
+    //         drone.vy = target_up;
+    // }
+    // if (drone.move == MOVE_DOWN)
+    //     cerr << "bottom" << endl;
+    // else
+    //     cerr << "top" << endl;
+    vector<int>::iterator it;
 
-    }
-    if (drone.y < target_down)
+    it = find(reported_fish.begin(), reported_fish.end() , drone.id );
+    if (it != reported_fish.end() && drone.y <= 300)
+        reported_fish.erase(it);
+    if (reported_fish.size() && it != reported_fish.end())
     {
-        drone.vy += 600;
+        drone.vy -= 600;
     }
-    else if ()
+    else
+    {
+        if (v[i].drone[drone.id] == "TL" || v[i].drone[drone.id] == "BL")
+        {
+            drone.vx -= 300; 
+        }
+        else if (v[i].drone[drone.id] == "TR" || v[i].drone[drone.id] == "BR")
+        {
+            drone.vx += 300; 
+        }
+        if (v[i].drone[drone.id][0] == 'B')
+            drone.vy += 600;
+        else
+            drone.vy -= 600;
+
+        if (drone.vx < 0 || drone.vx > 9999)
+        {
+            drone.vx = 600;
+        }
+        if (drone.vy < 0 || drone.vy > 9999)
+        {
+            drone.vy = 600;
+        }
+    }
+    
+    j = -1;
+    while (++j < v.size())
+    {
+        if (v[j].scanned)
+        {
+            if (v[j].type == -1)
+            {
+                cerr << "\t here \t\n";
+            }
+            if (v[j].type == 2)
+            {
+                cerr << "hereeee" << endl;
+                if (find(reported_fish.begin(), reported_fish.end() , drone.id ) == reported_fish.end())
+                    reported_fish.push_back(drone.id);
+                drone.x = drone.x;
+                drone.y -= 600;
+            }
+            v.erase(v.begin() + j);
+        }
+    }
     if (visible_monster.size())
     {
         int     x;
         int     y;
-        
-        x  = drone.x;
-        y  = drone.y;
-        x -= drone.x;
-        y -= drone.y; 
-        
-        double _cos = cos(angle * M_PI / 180);
-        double _sin = -sin(angle * M_PI / 180);
+        double x_new;
+        double y_new;
+        double _cos;
+        double _sin;
+        int dist;
 
-        double x_new = x * _cos - y * _sin; 
-        double y_new = x * _sin + y * _cos; 
-
-        x = x_new + drone.x;
-        y = y_new + drone.y;
+        x  = drone.vx;
+        y  = drone.vy;
+        
 
         while (angle <= 360)
         {
-            if (check_territory(x, y, visible_monster))
+            if (check_boundries(x, y) || check_territory(x, y, visible_monster))
             {
                 angle += 20;
+
+                x  = drone.vx;
+                y  = drone.vy;
+                x -= drone.x;
+                y -= drone.y; 
+                
+                _cos = cos(angle * M_PI / 180);
+                _sin = -sin(angle * M_PI / 180);
+
+                x_new = x * _cos - y * _sin; 
+                y_new = x * _sin + y * _cos; 
+
+                x = x_new + drone.x;
+                y = y_new + drone.y;
                 continue ;
             }
             else
             {
-
+                // if (drone.id == 0)
+                //     cerr << "Valid" << endl;
+                dist = calc_distance(drone.vx, drone.vy, x, y);
+                next_points[dist] = make_pair(x, y);
             }
             angle += 20;
         }
-        return ;
+        cerr << "player coordinates : " << "x : " << drone.x << " " << drone.y << endl;
+        drone.x = next_points.begin()->second.first;
+        drone.y = next_points.begin()->second.second;
+        cerr << "next coordinates : " << "x : " << drone.x << " " << drone.y << endl;
     }
-
+    else
+    {
+        cerr << "player coordinates : " << "x : " << drone.x << " " << drone.y << endl;
+        drone.x = drone.vx;
+        drone.y = drone.vy;
+        cerr << "next coordinates : " << "x : " << drone.x << " " << drone.y << endl;
+    }
 
 
 
@@ -390,10 +364,10 @@ void    set_coords(Drone& drone,  vector<Monster>& visible_monster)
     //     tmp_y -= 600;
     //     // return ;
     // }
-     
+    
     // make_decision( i,  id ,tmp_x, tmp_y, coords);
 
-   
+    
 }
 
 int main()
@@ -409,7 +383,7 @@ int main()
         int creature_id;
         int color;
         int type;
-      
+    
         cin >> creature_id >> color >> type; cin.ignore();
         if (type == -1)
             monsters.push_back(Monster(creature_id, 0, 0, 0, 0));
@@ -419,14 +393,15 @@ int main()
     int state = 0;
     int     ids[2];
     // game loop
-    // vector<int> scanned;
+    vector<int> scanned;
+    vector<Drone> drone(2);
+
     int     turn = -1; 
     while (1) {
         turn++; 
         vector<Monster> visible_monsters;
 
-        map<int, pair<int, int>> coords;
-        vector<Drone> drone;
+        map<int, pair<int, int> > coords;
 
         int my_score;
         cin >> my_score; cin.ignore();
@@ -459,13 +434,19 @@ int main()
         for (int i = 0; i < my_drone_count; i++) {
             cin >> drone_id >> drone_x >> drone_y >> emergency >> battery; cin.ignore();
             ids[i] = drone_id;
-            drones.push_back(Drone(drone_id , drone_x , drone_y ,  drone_x , drone_y, emergency , battery));
+            drone[i].id = drone_id;
+            drone[i].x = drone_x;
+            drone[i].y = drone_y;
+            drone[i].vx = drone_x;
+            drone[i].vy = drone_y;
+            drone[i].emergency = emergency;
+            drone[i].battery = battery;
             // cerr << "id : " << ids[i] << endl;
             coords[drone_id] = make_pair(drone_x, drone_y);
         }
         int foe_drone_count;
         cin >> foe_drone_count; cin.ignore();
-       
+    
 
         for (int i = 0; i < foe_drone_count; i++) {
             int drone_id;
@@ -503,14 +484,14 @@ int main()
         int visible_creature_count;
         cin >> visible_creature_count; cin.ignore();
         
-        // j = -1;
-        // while (++j < v.size())
-        // {
-        //     v[j].x = 0;
-        //     v[j].y = 0;
-        //     v[j].vx = 0;
-        //     v[j].vy = 0;
-        // }
+        j = -1;
+        while (++j < v.size())
+        {
+            v[j].x = 0;
+            v[j].y = 0;
+            v[j].vx = 0;
+            v[j].vy = 0;
+        }
         for (int i = 0; i < visible_creature_count; i++) {
             int creature_id;
             int creature_x;
@@ -574,7 +555,7 @@ int main()
             // cerr << "drone id : " << drone_id << endl;
 
         }
-       
+    
         int s = 0;
         
         sort(v.begin(), v.end(), compare);
@@ -585,22 +566,11 @@ int main()
         // }
         int     tmp_x;
         int     tmp_y;
-      
+    
         // aya wahda nscanniha nb9a tab3ha 7ta n5rjha mn borders
         // if (scanned.size() == 11)
         //     cerr << "size : " << scanned.back() << endl;
-        j = -1;
-        while (++j < v.size())
-        {
-            if (v[j].scanned)
-            {
-                if (v[j].type == -1)
-                {
-                    cerr << "\t here \t\n";
-                }
-                v.erase(v.begin() + j);
-            }
-        }
+       
         //  lamba[0] = 0;
         //  lamba[1] = 0;
         for (int i = 0; i < my_drone_count; i++) {
@@ -614,17 +584,16 @@ int main()
             }
             else
             {
-               
-                set_coords(i, ids[i], tmp_x, tmp_y, coords);
+                set_coords(i, drone[i],  visible_monsters);
                 if (v.empty())
                 {
                     cerr << "move to report" << endl;
-                    cout << "MOVE " << 500 << " " << 0 << " 0" << endl;
+                    cout << "MOVE " << drone[i].x << " " << 0 << " 0" << endl;
                 }
                 else
                 {
                     
-                    if (drone[i].y - 600 >= 1500 && battery >= 5 && turn % 2 == 0)
+                    if (drone[i].y >= 1500 && battery >= 5 && turn % 2 == 0)//&& !lamba[i])
                     {
                         cout << "MOVE " << drone[i].x << " " << drone[i].y << " 1" << endl; // MOVE <x> <y> <light (1|0)> | WAIT <light (1|0)>
                         // light[i] = 1;
