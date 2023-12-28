@@ -195,7 +195,7 @@ void    set_coords(int i, Drone& drone,  vector<Monster>& visible_monster)
     vector<int>::iterator it;
 
     it = find(reported_fish.begin(), reported_fish.end() , drone.id );
-    if (it != reported_fish.end() && drone.y <= 300)
+    if (it != reported_fish.end() && !drone.y)
         reported_fish.erase(it);
     if (reported_fish.size() && it != reported_fish.end())
     {
@@ -205,11 +205,11 @@ void    set_coords(int i, Drone& drone,  vector<Monster>& visible_monster)
     {
         if (v[i].drone[drone.id] == "TL" || v[i].drone[drone.id] == "BL")
         {
-            drone.vx -= 300; 
+            drone.vx -= 600; 
         }
         else if (v[i].drone[drone.id] == "TR" || v[i].drone[drone.id] == "BR")
         {
-            drone.vx += 300; 
+            drone.vx += 600; 
         }
         if (v[i].drone[drone.id][0] == 'B')
             drone.vy += 600;
