@@ -589,7 +589,6 @@ void    set_coords(int i, Drone& drone,   map<int, vector<Monster> >& visible_mo
         double _sin;
         int dist;
     
-        cerr << "target of drone : " << drone.id << " => " << drone.target[0] << " " << drone.target[1] << endl;
         int     next_x;
         int     next_y;
 
@@ -630,7 +629,7 @@ void    set_coords(int i, Drone& drone,   map<int, vector<Monster> >& visible_mo
         drone.x = next_points.begin()->second.first;
         drone.y = next_points.begin()->second.second;
 
-        cerr << "next coordinates : " << "x : " << drone.x << " " << drone.y << endl;
+        // cerr << "next coordinates : " << "x : " << drone.x << " " << drone.y << endl;
     }
     else
     {
@@ -981,15 +980,13 @@ int main()
                 // else
                 // {
                     
-                    if (drone[i].y >= 1500 && battery >= 5 && turn % 2 == 0)//&& !lamba[i])
+                    if ((drone[i].vy >= 8750) || (drone[i].y >= 1500 && drone[i].battery >= 5 && turn % 3 == 0))
                     {
-                        cout << "MOVE " << drone[i].x << " " << drone[i].y << " 1" << endl; // MOVE <x> <y> <light (1|0)> | WAIT <light (1|0)>
-                        // light[i] = 1;
+                        cout << "MOVE " << drone[i].x << " " << drone[i].y << " 1" << endl; 
                     }
                     else
                     {
-                        // light[i] = 0;
-                        cout << "MOVE " << drone[i].x << " " << drone[i].y << " 0" << endl; // MOVE <x> <y> <light (1|0)> | WAIT <light (1|0)>
+                        cout << "MOVE " << drone[i].x << " " << drone[i].y << " 0" << endl; 
                     }
                 // }
             }
